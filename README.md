@@ -1,11 +1,11 @@
-# Simulador costo conductor 14x7 - versión detallada
+# Simulador costo conductor 14x7 - SIN PLOTLY
 
-Incluye horario editable, cálculo de horas diurnas/nocturnas, extras, dominicales, festivos, bonos editables, transporte y aportes empresa.
+Esta versión elimina Plotly para evitar el error ModuleNotFoundError.
 
-Para Streamlit Cloud:
+Archivos:
 - app.py
 - requirements.txt
 - README.md
 
-Main file path:
-app.py
+En Streamlit:
+Main file path = app.py
