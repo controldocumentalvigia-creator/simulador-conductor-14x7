@@ -1,21 +1,11 @@
-# Simulador costo conductor 14x7
+# Simulador costo conductor 14x7 - versión detallada
 
-Dashboard web gratuito en Streamlit para proyectar cuánto cuesta un conductor bajo esquema 14x7.
+Incluye horario editable, cálculo de horas diurnas/nocturnas, extras, dominicales, festivos, bonos editables, transporte y aportes empresa.
 
-## Cómo ejecutarlo localmente
+Para Streamlit Cloud:
+- app.py
+- requirements.txt
+- README.md
 
-pip install -r requirements.txt
-streamlit run app.py
-
-## Cómo compartir por link gratis
-
-1. Crea una cuenta en GitHub.
-2. Crea un repositorio nuevo.
-3. Sube app.py y requirements.txt.
-4. Entra a Streamlit Community Cloud.
-5. Conecta tu GitHub.
-6. Selecciona el repositorio y publica la app.
-7. Copia el link y compártelo con gerencia.
-
-## Nota
-Los valores de SMLV, auxilio, recargos, bonificaciones y carga prestacional son editables desde la barra lateral.
+Main file path:
+app.py
