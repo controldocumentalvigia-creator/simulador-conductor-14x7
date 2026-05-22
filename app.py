@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🚐 DASHBOARD EJECUTIVO COSTO OPERACIONAL 14x7")
+st.title("🚐 COSTO OPERACIONAL CONDUCTOR 14x7")
 st.caption("Costo real empresa vs neto conductor | Transporte especial y empresarial")
 
 # =========================================================
