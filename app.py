@@ -1,29 +1,78 @@
 import streamlit as st
 import pandas as pd
-from datetime import time
+from datetime import datetime, time
 
-st.set_page_config(page_title="Simulador 14x7", layout="wide")
+# =========================================================
+# CONFIGURACIÓN GENERAL
+# =========================================================
 
-st.title("🚐 Simulador costo conductor + vehículo 14x7")
+st.set_page_config(
+    page_title="Dashboard Ejecutivo 14x7",
+    page_icon="🚐",
+    layout="wide"
+)
 
-def cop(valor):
+st.title("🚐 DASHBOARD EJECUTIVO COSTO OPERACIONAL 14x7")
+st.caption("Costo real empresa vs neto conductor | Transporte especial y empresarial")
+
+# =========================================================
+# FUNCIONES
+# =========================================================
+
+def formato_pesos(valor):
     return f"${valor:,.0f}".replace(",", ".")
+
+# =========================================================
+# SIDEBAR
+# =========================================================
 
 with st.sidebar:
 
-    st.header("⚙️ Configuración")
+    st.header("⚙️ CONFIGURACIÓN OPERACIONAL")
 
-    smlv = st.number_input("SMLV", value=1750905)
+    # -----------------------------------
+    # BASE SALARIAL
+    # -----------------------------------
 
-    bono_disp = st.number_input("Bono disponibilidad", value=214000)
+    st.subheader("💰 Base salarial")
 
-    bono_res = st.number_input("Bono resultados", value=240492)
+    smlv = st.number_input(
+        "SMLV",
+        value=1750905,
+        step=10000
+    )
 
-    bono_com = st.number_input("Bono comunicación", value=30000)
+    bono_disponibilidad = st.number_input(
+        "Bono disponibilidad",
+        value=214000,
+        step=10000
+    )
 
-    transporte = st.number_input("Auxilio / transporte", value=0)
+    bono_resultados = st.number_input(
+        "Bono resultados",
+        value=240492,
+        step=10000
+    )
+
+    bono_comunicacion = st.number_input(
+        "Bono comunicación",
+        value=30000,
+        step=5000
+    )
+
+    valor_transporte = st.number_input(
+        "Valor transporte",
+        value=0,
+        step=10000
+    )
+
+    # -----------------------------------
+    # PROGRAMACIÓN
+    # -----------------------------------
 
     st.divider()
+
+    st.subheader("🕐 Programación")
 
     hora_inicio = st.time_input(
         "Hora inicio",
@@ -42,11 +91,31 @@ with st.sidebar:
         12
     )
 
+    limite_fatiga = st.slider(
+        "Límite fatiga",
+        1,
+        24,
+        15
+    )
+
+    # -----------------------------------
+    # PRODUCTIVIDAD
+    # -----------------------------------
+
     st.divider()
 
-    produccion = st.number_input(
+    st.subheader("📈 Productividad")
+
+    produccion_vehiculo = st.number_input(
         "Producción vehículo",
-        value=16000000
+        value=16000000,
+        step=100000
+    )
+
+    meta_productividad = st.number_input(
+        "Meta mínima productividad",
+        value=16000000,
+        step=100000
     )
 
     porcentaje_comision = st.slider(
@@ -56,36 +125,51 @@ with st.sidebar:
         2.0
     )
 
-    comision = produccion * (porcentaje_comision / 100)
+    # -----------------------------------
+    # COSTOS VEHÍCULO
+    # -----------------------------------
 
     st.divider()
 
+    st.subheader("🚐 Costos vehículo")
+
     dotacion = st.number_input("Dotación", value=0)
-
     alimentacion = st.number_input("Alimentación", value=0)
-
     lavado = st.number_input("Lavado vehículo", value=0)
-
     estadia = st.number_input("Estadía", value=0)
-
     peajes = st.number_input("Peajes", value=0)
-
     combustible = st.number_input("Combustible", value=0)
-
     parqueadero = st.number_input("Parqueadero", value=0)
-
     mantenimiento = st.number_input("Mantenimiento", value=0)
 
-base_salarial = smlv + bono_disp + bono_res
+# =========================================================
+# BASE SALARIAL
+# =========================================================
+
+base_salarial = (
+    smlv
+    + bono_resultados
+    + bono_disponibilidad
+)
 
 valor_hora = base_salarial / 220
 
-horas_nocturnas = 72
+# =========================================================
+# HORAS EJEMPLO OPERACIONAL
+# =========================================================
+
 horas_diurnas = 216
+horas_nocturnas = 72
+
 extras_diurnas = 84
 extras_nocturnas = 8
+
 dominicales = 4
 festivos = 2
+
+# =========================================================
+# RECARGOS
+# =========================================================
 
 recargo_nocturno = horas_nocturnas * valor_hora * 0.35
 
@@ -105,35 +189,105 @@ total_recargos = (
     + valor_festivo
 )
 
+# =========================================================
+# COMISIÓN PRODUCTIVIDAD
+# =========================================================
+
+if produccion_vehiculo >= meta_productividad:
+
+    comision_productividad = (
+        produccion_vehiculo
+        * (porcentaje_comision / 100)
+    )
+
+else:
+
+    comision_productividad = 0
+
+# =========================================================
+# PRESTACIONES
+# =========================================================
+
 prima = base_salarial * 0.0833
-
 cesantias = base_salarial * 0.0833
-
-intereses = base_salarial * 0.01
-
+intereses_ces = base_salarial * 0.01
 vacaciones = base_salarial * 0.0417
 
-prestaciones = (
+total_prestaciones = (
     prima
     + cesantias
-    + intereses
+    + intereses_ces
     + vacaciones
 )
 
+# =========================================================
+# APORTES EMPRESA
+# =========================================================
+
 pension_empresa = base_salarial * 0.12
-
 ccp = base_salarial * 0.04
-
 arl = base_salarial * 0.0696
 
-salud_empresa = base_salarial * 0.085
-
-seguridad = (
+total_aportes_empresa = (
     pension_empresa
     + ccp
     + arl
-    + salud_empresa
 )
+
+# =========================================================
+# PARAFISCALES
+# =========================================================
+
+salud_empresa = base_salarial * 0.085
+sena = 0
+icbf = 0
+fsp = 0
+
+total_parafiscales = (
+    salud_empresa
+    + sena
+    + icbf
+    + fsp
+)
+
+# =========================================================
+# DESCUENTOS CONDUCTOR
+# =========================================================
+
+salud_conductor = base_salarial * 0.04
+pension_conductor = base_salarial * 0.04
+
+total_descuentos = (
+    salud_conductor
+    + pension_conductor
+)
+
+# =========================================================
+# DEVENGADO CONDUCTOR
+# =========================================================
+
+devengado_conductor = (
+    smlv
+    + bono_disponibilidad
+    + bono_resultados
+    + bono_comunicacion
+    + valor_transporte
+    + total_recargos
+    + comision_productividad
+)
+
+# =========================================================
+# NETO CONDUCTOR
+# =========================================================
+
+neto_conductor = (
+    devengado_conductor
+    - total_descuentos
+)
+
+# =========================================================
+# COSTOS VEHÍCULO
+# =========================================================
 
 costos_vehiculo = (
     dotacion
@@ -146,56 +300,81 @@ costos_vehiculo = (
     + mantenimiento
 )
 
-salud_empleado = base_salarial * 0.04
-
-pension_empleado = base_salarial * 0.04
-
-descuentos = salud_empleado + pension_empleado
-
-devengado = (
-    smlv
-    + bono_disp
-    + bono_res
-    + bono_com
-    + transporte
-    + total_recargos
-    + comision
-)
-
-neto = devengado - descuentos
+# =========================================================
+# COSTO TOTAL EMPRESA
+# =========================================================
 
 costo_empresa = (
-    devengado
-    + prestaciones
-    + seguridad
+    devengado_conductor
+    + total_prestaciones
+    + total_aportes_empresa
+    + total_parafiscales
     + costos_vehiculo
 )
 
-col1, col2, col3, col4 = st.columns(4)
+# =========================================================
+# KPIS
+# =========================================================
 
-col1.metric(
-    "Costo empresa",
-    cop(costo_empresa)
+st.subheader("📌 KPIs Ejecutivos")
+
+k1, k2, k3, k4 = st.columns(4)
+
+k1.metric(
+    "Costo total empresa",
+    formato_pesos(costo_empresa)
 )
 
-col2.metric(
+k2.metric(
     "Neto conductor",
-    cop(neto)
+    formato_pesos(neto_conductor)
 )
 
-col3.metric(
+k3.metric(
     "Costos vehículo",
-    cop(costos_vehiculo)
+    formato_pesos(costos_vehiculo)
 )
 
-col4.metric(
+k4.metric(
     "Comisión productividad",
-    cop(comision)
+    formato_pesos(comision_productividad)
 )
+
+# =========================================================
+# ALERTAS
+# =========================================================
 
 st.divider()
 
-detalle = pd.DataFrame({
+st.subheader("🚨 Alertas operacionales")
+
+if horas_disponibles > 12:
+
+    st.warning(
+        "⚠️ Las horas disponibles superan 12 horas."
+    )
+
+if horas_disponibles > limite_fatiga:
+
+    st.error(
+        "🚨 Riesgo de fatiga operacional."
+    )
+
+else:
+
+    st.success(
+        "✅ Jornada dentro del límite de fatiga."
+    )
+
+# =========================================================
+# TABLA NETO CONDUCTOR
+# =========================================================
+
+st.divider()
+
+st.subheader("💳 ¿Qué recibe el conductor?")
+
+tabla_conductor = pd.DataFrame({
 
     "Concepto": [
 
@@ -203,40 +382,199 @@ detalle = pd.DataFrame({
         "Bono disponibilidad",
         "Bono resultados",
         "Bono comunicación",
-        "Comisión productividad",
         "Recargos",
-        "Prestaciones",
-        "Seguridad social",
-        "Costos vehículo",
-        "NETO CONDUCTOR",
-        "COSTO EMPRESA"
+        "Comisión productividad",
+        "Salud conductor",
+        "Pensión conductor",
+        "NETO CONDUCTOR"
 
     ],
 
     "Valor": [
 
         smlv,
-        bono_disp,
-        bono_res,
-        bono_com,
-        comision,
+        bono_disponibilidad,
+        bono_resultados,
+        bono_comunicacion,
         total_recargos,
-        prestaciones,
-        seguridad,
+        comision_productividad,
+        -salud_conductor,
+        -pension_conductor,
+        neto_conductor
+
+    ]
+
+})
+
+tabla_conductor["Valor"] = tabla_conductor["Valor"].apply(
+    formato_pesos
+)
+
+st.dataframe(
+    tabla_conductor,
+    use_container_width=True,
+    hide_index=True
+)
+
+# =========================================================
+# TABLA COSTO EMPRESA
+# =========================================================
+
+st.divider()
+
+st.subheader("🏢 ¿Qué paga realmente la empresa?")
+
+tabla_empresa = pd.DataFrame({
+
+    "Concepto": [
+
+        "Devengado conductor",
+        "Prima 8,33%",
+        "Cesantías 8,33%",
+        "Intereses cesantías 1%",
+        "Vacaciones 4,17%",
+        "Pensión empresa 12%",
+        "CCP 4%",
+        "ARL 6,96%",
+        "Salud empresa 8,5%",
+        "Costos vehículo",
+        "COSTO TOTAL EMPRESA"
+
+    ],
+
+    "Valor": [
+
+        devengado_conductor,
+        prima,
+        cesantias,
+        intereses_ces,
+        vacaciones,
+        pension_empresa,
+        ccp,
+        arl,
+        salud_empresa,
         costos_vehiculo,
-        neto,
         costo_empresa
 
     ]
 
 })
 
-detalle["Valor"] = detalle["Valor"].apply(cop)
+tabla_empresa["Valor"] = tabla_empresa["Valor"].apply(
+    formato_pesos
+)
 
 st.dataframe(
-    detalle,
+    tabla_empresa,
     use_container_width=True,
     hide_index=True
 )
 
-st.success("✅ Simulador operativo cargado correctamente.")
+# =========================================================
+# HORAS
+# =========================================================
+
+st.divider()
+
+st.subheader("⏰ Resumen de horas")
+
+tabla_horas = pd.DataFrame({
+
+    "Tipo": [
+
+        "Horas diurnas",
+        "Horas nocturnas",
+        "Extras diurnas",
+        "Extras nocturnas",
+        "Dominicales",
+        "Festivos"
+
+    ],
+
+    "Cantidad": [
+
+        horas_diurnas,
+        horas_nocturnas,
+        extras_diurnas,
+        extras_nocturnas,
+        dominicales,
+        festivos
+
+    ]
+
+})
+
+st.dataframe(
+    tabla_horas,
+    use_container_width=True,
+    hide_index=True
+)
+
+st.bar_chart(
+    tabla_horas.set_index("Tipo")
+)
+
+# =========================================================
+# PROGRAMACIÓN 14x7
+# =========================================================
+
+st.divider()
+
+st.subheader("📅 Programación visual 14x7")
+
+html = """
+
+<table style='width:100%; border-spacing:10px;'>
+
+<tr>
+
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+<td style='background:#F4CCCC;padding:20px;border-radius:10px;'>DOM</td>
+
+</tr>
+
+<tr>
+
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+<td style='background:#CFE2F3;padding:20px;border-radius:10px;'>FEST</td>
+<td style='background:#D9EAD3;padding:20px;border-radius:10px;'>LABORA</td>
+
+</tr>
+
+<tr>
+
+<td style='background:#D9D9D9;padding:20px;border-radius:10px;'>DESC</td>
+<td style='background:#D9D9D9;padding:20px;border-radius:10px;'>DESC</td>
+<td style='background:#D9D9D9;padding:20px;border-radius:10px;'>DESC</td>
+<td style='background:#D9D9D9;padding:20px;border-radius:10px;'>DESC</td>
+<td style='background:#D9D9D9;padding:20px;border-radius:10px;'>DESC</td>
+<td style='background:#D9D9D9;padding:20px;border-radius:10px;'>DESC</td>
+<td style='background:#D9D9D9;padding:20px;border-radius:10px;'>DESC</td>
+
+</tr>
+
+</table>
+
+"""
+
+st.markdown(
+    html,
+    unsafe_allow_html=True
+)
+
+# =========================================================
+# FINAL
+# =========================================================
+
+st.success(
+    "✅ Dashboard ejecutivo 14x7 cargado correctamente."
+)
