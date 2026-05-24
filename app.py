@@ -181,7 +181,7 @@ with st.sidebar:
     pension_trab_p = st.number_input("Pensión empleado %", 0.0, 20.0, 4.00, step=0.01) / 100
     otros_desc = st.number_input("Otros descuentos", 0, value=0, step=10000)
 
-    st.subheader("🚐 Costos vehículo")
+    st.subheader("🚐 Costos_ADIC_vehículo+Conductor")
     dotacion = st.number_input("Dotación", 0, value=0, step=10000)
     alimentacion = st.number_input("Alimentación", 0, value=0, step=10000)
     lavado = st.number_input("Lavado general", 0, value=0, step=10000)
