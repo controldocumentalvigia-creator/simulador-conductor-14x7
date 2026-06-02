@@ -1,3 +1,4 @@
+
 import calendar
 from datetime import date, datetime, time, timedelta
 
@@ -22,18 +23,16 @@ h1, h2, h3 {{ color: {AZUL}; }}
     box-shadow: 0 2px 6px rgba(18,58,99,0.06);
 }}
 [data-testid="stMetricLabel"] {{ font-size: 0.78rem; }}
-[data-testid="stMetricValue"] {{ font-size: 1.15rem; }}
+[data-testid="stMetricValue"] {{ font-size: 1.12rem; }}
 div[data-testid="stDataFrame"] {{ background: white; border-radius: 12px; }}
 </style>
 """, unsafe_allow_html=True)
 
 st.title("🚐 Simulador mensual conductor + vehículo 14x7")
-st.caption("Transporte especial empresarial | Nómina operativa mensual + gastos vehículo + alerta legal semanal")
+st.caption("Transporte especial empresarial | Nómina operativa mensual + base prestacional/IBC corregida")
 
-MESES = {
-    "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6,
-    "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12
-}
+MESES = {"Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6,
+         "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12}
 DIAS_SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 
 
@@ -82,18 +81,10 @@ def tarifa_dom(anio):
 
 
 def construir_programacion(anio, mes, fecha_inicio_ciclo, hora_inicio, hora_fin, festivos_simulados):
-    """
-    Programa el mes completo usando una fecha real de inicio del ciclo 14x7.
-    Desde esa fecha:
-    - Día ciclo 1 a 14: LABORA
-    - Día ciclo 15 a 21: DESCANSO
-    - Se repite ciclo continuo.
-    """
     dias_mes = calendar.monthrange(anio, mes)[1]
     horas_dia, _, _ = rango_horas(hora_inicio, hora_fin)
     noct_dia = horas_nocturnas_turno(hora_inicio, hora_fin)
     diur_dia = max(0, horas_dia - noct_dia)
-
     filas = []
     festivos_asignados = 0
 
@@ -126,27 +117,16 @@ def construir_programacion(anio, mes, fecha_inicio_ciclo, hora_inicio, hora_fin,
             etiqueta = "LABORA"
 
         filas.append({
-            "Fecha": fecha,
-            "Día": d,
-            "Semana": semana_mes,
-            "Día semana": DIAS_SEMANA[fecha.weekday()],
-            "Día ciclo 14x7": dia_ciclo,
-            "Estado": "LABORA" if trabaja else "DESCANSO",
-            "Etiqueta": etiqueta,
-            "Es domingo": es_domingo,
-            "Dominical laborado": trabaja and es_domingo,
-            "Festivo laborado": festivo_laborado,
-            "Horas totales": horas_totales,
-            "Horas diurnas": horas_diur,
-            "Horas nocturnas": horas_noct,
+            "Fecha": fecha, "Día": d, "Semana": semana_mes, "Día semana": DIAS_SEMANA[fecha.weekday()],
+            "Día ciclo 14x7": dia_ciclo, "Estado": "LABORA" if trabaja else "DESCANSO", "Etiqueta": etiqueta,
+            "Es domingo": es_domingo, "Dominical laborado": trabaja and es_domingo, "Festivo laborado": festivo_laborado,
+            "Horas totales": horas_totales, "Horas diurnas": horas_diur, "Horas nocturnas": horas_noct,
         })
-
     return pd.DataFrame(filas)
 
 
 with st.sidebar:
     st.header("⚙️ Parámetros")
-
     anio = st.number_input("Año", min_value=2025, max_value=2035, value=2026)
     mes_nombre = st.selectbox("Mes", list(MESES.keys()), index=5)
     mes = MESES[mes_nombre]
@@ -154,11 +134,7 @@ with st.sidebar:
 
     st.divider()
     st.subheader("📅 Programación 14x7")
-    fecha_inicio_ciclo = st.date_input(
-        "Fecha real de inicio del ciclo 14x7",
-        value=date(2026, 6, 8),
-        help="Desde esta fecha se cuenta: 14 días laborados y 7 días de descanso."
-    )
+    fecha_inicio_ciclo = st.date_input("Fecha real de inicio del ciclo 14x7", value=date(2026, 6, 8), help="Desde esta fecha se cuenta: 14 días laborados y 7 días de descanso.")
     hora_inicio = st.time_input("Hora inicio", value=time(3, 0), step=1800)
     hora_fin = st.time_input("Hora finalización", value=time(16, 0), step=1800)
     horas_ley_semana = st.number_input("Referencia legal semanal", min_value=1.0, max_value=60.0, value=45.0, step=1.0)
@@ -227,9 +203,6 @@ with st.sidebar:
     estadia = st.number_input("Estadía", min_value=0, value=0, step=10000)
 
 
-# =========================================================
-# CÁLCULOS OPERACIONALES
-# =========================================================
 df = construir_programacion(anio, mes, fecha_inicio_ciclo, hora_inicio, hora_fin, int(festivos_laborados_simulados))
 
 horas_dia, _, _ = rango_horas(hora_inicio, hora_fin)
@@ -244,13 +217,11 @@ domingos_no_laborados = int(((df["Es domingo"] == True) & (df["Estado"] == "DESC
 festivos_laborados = int(df["Festivo laborado"].sum())
 festivos_no_laborados = max(0, int(festivos_laborados_simulados) - festivos_laborados)
 
-# Panel operacional mensual para costeo
 horas_base_operacional = dias_laborados * horas_base_dia_operacional
 horas_extras_operacionales = max(0, total_horas - horas_base_operacional)
 horas_extras_nocturnas = min(horas_nocturnas, horas_extras_operacionales)
 horas_extras_diurnas = max(0, horas_extras_operacionales - horas_extras_nocturnas)
 
-# Panel legal semanal como alerta, sin afectar costeo mensual
 weekly_rows = []
 for semana, gp in df.groupby("Semana"):
     ht = gp["Horas totales"].sum()
@@ -259,28 +230,20 @@ for semana, gp in df.groupby("Semana"):
     exceso_semana = max(0, ht - horas_ley_semana)
     faltante_semana = max(0, horas_ley_semana - ht)
     weekly_rows.append({
-        "Semana": f"Semana {semana}",
-        "Días laborados": int((gp["Estado"] == "LABORA").sum()),
-        "Días descanso": int((gp["Estado"] == "DESCANSO").sum()),
-        "Horas totales": ht,
-        "Referencia legal semanal": horas_ley_semana,
-        "Exceso legal semanal": exceso_semana,
-        "Faltante semanal": faltante_semana,
-        "Horas diurnas": hd,
-        "Horas nocturnas": hn,
-        "Domingos laborados": int(gp["Dominical laborado"].sum()),
-        "Festivos laborados": int(gp["Festivo laborado"].sum())
+        "Semana": f"Semana {semana}", "Días laborados": int((gp["Estado"] == "LABORA").sum()),
+        "Días descanso": int((gp["Estado"] == "DESCANSO").sum()), "Horas totales": ht,
+        "Referencia legal semanal": horas_ley_semana, "Exceso legal semanal": exceso_semana,
+        "Faltante semanal": faltante_semana, "Horas diurnas": hd, "Horas nocturnas": hn,
+        "Domingos laborados": int(gp["Dominical laborado"].sum()), "Festivos laborados": int(gp["Festivo laborado"].sum())
     })
 weekly_df = pd.DataFrame(weekly_rows)
-
 
 # =========================================================
 # CÁLCULOS FINANCIEROS
 # =========================================================
-# Base prestacional / salarial: SMLV + Bono disponibilidad + Bono resultados.
-# Bono comunicación queda como auxilio no prestacional.
-base_prestacional = smlv + bono_disp + bono_res
-valor_hora = base_prestacional / 220 if base_prestacional else 0
+# Base fija inicial para calcular valor hora.
+base_fija_salarial = smlv + bono_disp + bono_res
+valor_hora = base_fija_salarial / 220 if base_fija_salarial else 0
 
 valor_nocturno = horas_nocturnas * valor_hora * rec_nocturno
 valor_extra_diurna = horas_extras_diurnas * valor_hora * (1 + rec_extra_diurna)
@@ -291,24 +254,28 @@ valor_festivo = festivos_laborados * horas_dia * valor_hora * rec_festivo
 total_recargos = valor_nocturno + valor_extra_diurna + valor_extra_nocturna + valor_dominical + valor_festivo
 comision = produccion * pct_comision if produccion >= meta_produccion else 0
 
-devengado = smlv + bono_disp + bono_res + bono_com + total_recargos + comision
+# Base prestacional / IBC corregida.
+base_prestacional_ibc = base_fija_salarial + total_recargos + comision
+no_prestacional = bono_com
 
-prima = base_prestacional * prima_pct
-ces = base_prestacional * ces_pct
-int_ces = base_prestacional * int_ces_pct
-vac = base_prestacional * vac_pct
+devengado = base_fija_salarial + bono_com + total_recargos + comision
+
+prima = base_prestacional_ibc * prima_pct
+ces = base_prestacional_ibc * ces_pct
+int_ces = base_prestacional_ibc * int_ces_pct
+vac = base_prestacional_ibc * vac_pct
 total_prestaciones = prima + ces + int_ces + vac
 
-pension_emp = base_prestacional * pension_emp_pct
-ccp = base_prestacional * ccp_pct
-arl = base_prestacional * arl_pct
-salud_emp = base_prestacional * salud_emp_pct
-sena = base_prestacional * sena_pct
-icbf = base_prestacional * icbf_pct
+pension_emp = base_prestacional_ibc * pension_emp_pct
+ccp = base_prestacional_ibc * ccp_pct
+arl = base_prestacional_ibc * arl_pct
+salud_emp = base_prestacional_ibc * salud_emp_pct
+sena = base_prestacional_ibc * sena_pct
+icbf = base_prestacional_ibc * icbf_pct
 total_aportes = pension_emp + ccp + arl + salud_emp + sena + icbf
 
-desc_salud = base_prestacional * salud_trab_pct
-desc_pension = base_prestacional * pension_trab_pct
+desc_salud = base_prestacional_ibc * salud_trab_pct
+desc_pension = base_prestacional_ibc * pension_trab_pct
 total_descuentos = desc_salud + desc_pension + otros_descuentos
 neto_conductor = devengado - total_descuentos
 
@@ -319,10 +286,6 @@ costo_conductor_empresa = devengado + total_prestaciones + total_aportes
 costo_total_empresa_mensual = costo_conductor_empresa + gasto_vehiculo + gasto_conductor
 costo_mensual_flota = costo_total_empresa_mensual * cantidad_conductores
 
-
-# =========================================================
-# PRESENTACIÓN
-# =========================================================
 st.subheader("1️⃣ Totales mensuales principales")
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Total a pagar al conductor", cop(neto_conductor))
@@ -332,7 +295,7 @@ c4.metric("Costo total empresa mensual", cop(costo_total_empresa_mensual))
 
 c5, c6, c7, c8 = st.columns(4)
 c5.metric("Costo mensual flota", cop(costo_mensual_flota))
-c6.metric("Base prestacional", cop(base_prestacional))
+c6.metric("Base prestacional / IBC", cop(base_prestacional_ibc))
 c7.metric("Total recargos", cop(total_recargos))
 c8.metric("Comisión productividad", cop(comision))
 
@@ -364,89 +327,16 @@ else:
 
 st.divider()
 st.subheader("3️⃣ Horas del mes")
-horas_df = pd.DataFrame({
-    "Tipo": [
-        "Horas totales",
-        "Horas base operacionales",
-        "Extras operacionales",
-        "Horas diurnas",
-        "Horas nocturnas",
-        "Extras diurnas",
-        "Extras nocturnas"
-    ],
-    "Horas": [
-        total_horas,
-        horas_base_operacional,
-        horas_extras_operacionales,
-        horas_diurnas,
-        horas_nocturnas,
-        horas_extras_diurnas,
-        horas_extras_nocturnas
-    ]
-})
+horas_df = pd.DataFrame({"Tipo": ["Horas totales", "Horas base operacionales", "Extras operacionales", "Horas diurnas", "Horas nocturnas", "Extras diurnas", "Extras nocturnas"], "Horas": [total_horas, horas_base_operacional, horas_extras_operacionales, horas_diurnas, horas_nocturnas, horas_extras_diurnas, horas_extras_nocturnas]})
 st.dataframe(horas_df, use_container_width=True, hide_index=True)
 
 st.divider()
 st.subheader("4️⃣ ¿Cuánto se le paga al conductor?")
 conductor_df = pd.DataFrame({
-    "Concepto": [
-        "SMLV / salario base",
-        "Bono disponibilidad",
-        "Bono resultados",
-        "Bono comunicación no prestacional",
-        "Recargo nocturno",
-        "Extras diurnas",
-        "Extras nocturnas",
-        "Dominicales",
-        "Festivos",
-        "Comisión productividad",
-        "Descuento salud empleado",
-        "Descuento pensión empleado",
-        "Otros descuentos",
-        "NETO A PAGAR A CUENTA BANCARIA"
-    ],
-    "% aplicado": [
-        "", "", "", "",
-        pct(rec_nocturno),
-        pct(rec_extra_diurna),
-        pct(rec_extra_nocturna),
-        pct(rec_dominical),
-        pct(rec_festivo),
-        f"{pct_comision_input:.2f}%".replace(".", ",") if produccion >= meta_produccion else "0%",
-        pct(salud_trab_pct),
-        pct(pension_trab_pct),
-        "",
-        ""
-    ],
-    "Soporte": [
-        "", "", "", "No prestacional",
-        hrs(horas_nocturnas),
-        hrs(horas_extras_diurnas),
-        hrs(horas_extras_nocturnas),
-        f"{domingos_laborados} domingos",
-        f"{festivos_laborados} festivos",
-        f"Producción {cop(produccion)} / Meta {cop(meta_produccion)}",
-        cop(base_prestacional),
-        cop(base_prestacional),
-        "",
-        ""
-    ],
-    "Valor": [
-        smlv,
-        bono_disp,
-        bono_res,
-        bono_com,
-        valor_nocturno,
-        valor_extra_diurna,
-        valor_extra_nocturna,
-        valor_dominical,
-        valor_festivo,
-        comision,
-        -desc_salud,
-        -desc_pension,
-        -otros_descuentos,
-        neto_conductor
-    ]
+    "Concepto": ["SMLV / salario base", "Bono disponibilidad", "Bono resultados", "Bono comunicación no prestacional", "Recargo nocturno", "Extras diurnas", "Extras nocturnas", "Dominicales", "Festivos", "Comisión productividad", "Descuento salud empleado", "Descuento pensión empleado", "Otros descuentos", "NETO A PAGAR A CUENTA BANCARIA"],
+    "% aplicado": ["", "", "", "", pct(rec_nocturno), pct(rec_extra_diurna), pct(rec_extra_nocturna), pct(rec_dominical), pct(rec_festivo), f"{pct_comision_input:.2f}%".replace(".", ",") if produccion >= meta_produccion else "0%", pct(salud_trab_pct), pct(pension_trab_pct), "", ""],
+    "Soporte": ["", "", "", "No prestacional", hrs(horas_nocturnas), hrs(horas_extras_diurnas), hrs(horas_extras_nocturnas), f"{domingos_laborados} domingos", f"{festivos_laborados} festivos", f"Producción {cop(produccion)} / Meta {cop(meta_produccion)}", cop(base_prestacional_ibc), cop(base_prestacional_ibc), "", ""],
+    "Valor": [smlv, bono_disp, bono_res, bono_com, valor_nocturno, valor_extra_diurna, valor_extra_nocturna, valor_dominical, valor_festivo, comision, -desc_salud, -desc_pension, -otros_descuentos, neto_conductor]
 })
 conductor_show = conductor_df.copy()
 conductor_show["Valor"] = conductor_show["Valor"].map(cop)
@@ -455,66 +345,10 @@ st.dataframe(conductor_show, use_container_width=True, hide_index=True)
 st.divider()
 st.subheader("5️⃣ ¿Cuánto paga la empresa por el conductor?")
 empresa_conductor_df = pd.DataFrame({
-    "Concepto": [
-        "Devengado conductor",
-        "Base salarial prestacional",
-        "Prima",
-        "Cesantías",
-        "Interés cesantías",
-        "Vacaciones",
-        "Pensión empresa",
-        "Caja compensación / CCP",
-        "ARL",
-        "Salud empresa",
-        "SENA",
-        "ICBF",
-        "TOTAL COSTO CONDUCTOR EMPRESA"
-    ],
-    "% aplicado": [
-        "",
-        "",
-        pct(prima_pct),
-        pct(ces_pct),
-        pct(int_ces_pct),
-        pct(vac_pct),
-        pct(pension_emp_pct),
-        pct(ccp_pct),
-        pct(arl_pct),
-        pct(salud_emp_pct),
-        pct(sena_pct),
-        pct(icbf_pct),
-        ""
-    ],
-    "Base": [
-        "",
-        cop(base_prestacional),
-        cop(base_prestacional),
-        cop(base_prestacional),
-        cop(base_prestacional),
-        cop(base_prestacional),
-        cop(base_prestacional),
-        cop(base_prestacional),
-        cop(base_prestacional),
-        cop(base_prestacional),
-        cop(base_prestacional),
-        cop(base_prestacional),
-        ""
-    ],
-    "Valor": [
-        devengado,
-        base_prestacional,
-        prima,
-        ces,
-        int_ces,
-        vac,
-        pension_emp,
-        ccp,
-        arl,
-        salud_emp,
-        sena,
-        icbf,
-        costo_conductor_empresa
-    ]
+    "Concepto": ["Devengado conductor", "Base fija salarial", "Base prestacional / IBC corregida", "Valor no prestacional", "Prima", "Cesantías", "Interés cesantías", "Vacaciones", "Pensión empresa", "Caja compensación / CCP", "ARL", "Salud empresa", "SENA", "ICBF", "TOTAL COSTO CONDUCTOR EMPRESA"],
+    "% aplicado": ["", "", "", "", pct(prima_pct), pct(ces_pct), pct(int_ces_pct), pct(vac_pct), pct(pension_emp_pct), pct(ccp_pct), pct(arl_pct), pct(salud_emp_pct), pct(sena_pct), pct(icbf_pct), ""],
+    "Base": ["", cop(base_fija_salarial), cop(base_prestacional_ibc), cop(no_prestacional), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), ""],
+    "Valor": [devengado, base_fija_salarial, base_prestacional_ibc, no_prestacional, prima, ces, int_ces, vac, pension_emp, ccp, arl, salud_emp, sena, icbf, costo_conductor_empresa]
 })
 empresa_conductor_show = empresa_conductor_df.copy()
 empresa_conductor_show["Valor"] = empresa_conductor_show["Valor"].map(cop)
@@ -522,54 +356,14 @@ st.dataframe(empresa_conductor_show, use_container_width=True, hide_index=True)
 
 st.divider()
 st.subheader("6️⃣ Gastos vehículo")
-gasto_vehiculo_df = pd.DataFrame({
-    "Concepto": [
-        "SOAT",
-        "Técnico-mecánica",
-        "Pólizas / seguros operación",
-        "GPS / plataforma monitoreo",
-        "Administración / documentación",
-        "Lavado general vehículo",
-        "Peaje con chip",
-        "Combustible",
-        "Parqueadero",
-        "Mantenimiento",
-        "TOTAL GASTO VEHÍCULO"
-    ],
-    "Valor": [
-        soat,
-        tecnomecanica,
-        polizas,
-        gps,
-        administracion,
-        lavado,
-        peaje,
-        combustible,
-        parqueadero,
-        mantenimiento,
-        gasto_vehiculo
-    ]
-})
+gasto_vehiculo_df = pd.DataFrame({"Concepto": ["SOAT", "Técnico-mecánica", "Pólizas / seguros operación", "GPS / plataforma monitoreo", "Administración / documentación", "Lavado general vehículo", "Peaje con chip", "Combustible", "Parqueadero", "Mantenimiento", "TOTAL GASTO VEHÍCULO"], "Valor": [soat, tecnomecanica, polizas, gps, administracion, lavado, peaje, combustible, parqueadero, mantenimiento, gasto_vehiculo]})
 gasto_vehiculo_show = gasto_vehiculo_df.copy()
 gasto_vehiculo_show["Valor"] = gasto_vehiculo_show["Valor"].map(cop)
 st.dataframe(gasto_vehiculo_show, use_container_width=True, hide_index=True)
 
 st.divider()
 st.subheader("7️⃣ Gastos conductor")
-gasto_conductor_df = pd.DataFrame({
-    "Concepto": [
-        "Dotación",
-        "Alimentación",
-        "Estadía",
-        "TOTAL GASTOS CONDUCTOR"
-    ],
-    "Valor": [
-        dotacion,
-        alimentacion,
-        estadia,
-        gasto_conductor
-    ]
-})
+gasto_conductor_df = pd.DataFrame({"Concepto": ["Dotación", "Alimentación", "Estadía", "TOTAL GASTOS CONDUCTOR"], "Valor": [dotacion, alimentacion, estadia, gasto_conductor]})
 gasto_conductor_show = gasto_conductor_df.copy()
 gasto_conductor_show["Valor"] = gasto_conductor_show["Valor"].map(cop)
 st.dataframe(gasto_conductor_show, use_container_width=True, hide_index=True)
@@ -609,7 +403,6 @@ for semana in sorted(df["Semana"].unique()):
             bg = "#D9D2E9"
         else:
             bg = "#D9EAD3"
-
         cell = f"""
         <div style='font-weight:700;font-size:15px'>{int(r['Día'])}</div>
         <div>{r['Día semana']}</div>
@@ -629,10 +422,4 @@ detalle["Horas totales"] = detalle["Horas totales"].round(1)
 detalle["Horas diurnas"] = detalle["Horas diurnas"].round(1)
 detalle["Horas nocturnas"] = detalle["Horas nocturnas"].round(1)
 st.dataframe(detalle, use_container_width=True, hide_index=True)
-
-st.download_button(
-    "⬇️ Descargar detalle diario CSV",
-    data=detalle.to_csv(index=False).encode("utf-8-sig"),
-    file_name=f"detalle_diario_{mes_nombre}_{anio}.csv",
-    mime="text/csv"
-)
+st.download_button("⬇️ Descargar detalle diario CSV", data=detalle.to_csv(index=False).encode("utf-8-sig"), file_name=f"detalle_diario_{mes_nombre}_{anio}.csv", mime="text/csv")
