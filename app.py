@@ -420,7 +420,7 @@ st.divider()
 st.subheader("4️⃣ ¿Cuánto se le paga al conductor?")
 conductor_df = pd.DataFrame({
     "Concepto": [
-        "SMLV / salario base", "Bono disponibilidad", "Bono resultados", "Bono comunicación ",
+        "SMLV / salario base", "Bono disponibilidad", "Bono resultados", "Bono comunicación no prestacional",
         "Recargo nocturno", "Extras diurnas", "Extras nocturnas", "Dominicales", "Festivos",
         "Comisión productividad", "Descuento salud empleado", "Descuento pensión empleado", "Otros descuentos",
         "NETO A PAGAR A CUENTA BANCARIA"
@@ -447,30 +447,86 @@ st.dataframe(conductor_show, use_container_width=True, hide_index=True)
 
 st.divider()
 st.subheader("5️⃣ ¿Cuánto paga la empresa por el conductor?")
-empresa_conductor_df = pd.DataFrame({
+
+# Esta sección consolida TODO lo que la empresa debe asumir:
+# 1. Nómina del conductor
+# 2. Prestaciones
+# 3. Aportes empresa
+# 4. Gastos conductor
+# 5. Gastos vehículo
+# 6. Total empresa mensual
+
+costo_conductor_empresa = devengado + total_prestaciones + total_aportes
+costo_total_empresa_mensual = costo_conductor_empresa + gasto_conductor + gasto_vehiculo
+costo_mensual_flota = costo_total_empresa_mensual * cantidad_conductores
+
+empresa_total_df = pd.DataFrame({
+    "Bloque": [
+        "NÓMINA CONDUCTOR", "NÓMINA CONDUCTOR", "NÓMINA CONDUCTOR", "NÓMINA CONDUCTOR",
+        "PRESTACIONES", "PRESTACIONES", "PRESTACIONES", "PRESTACIONES",
+        "APORTES EMPRESA", "APORTES EMPRESA", "APORTES EMPRESA", "APORTES EMPRESA", "APORTES EMPRESA", "APORTES EMPRESA",
+        "GASTOS CONDUCTOR", "GASTOS CONDUCTOR", "GASTOS CONDUCTOR",
+        "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO",
+        "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO",
+        "TOTAL GENERAL"
+    ],
     "Concepto": [
-        "Devengado conductor", "Base fija salarial", "Base prestacional / IBC ", "Bono comunicación", "Dotación", "alimentación", "estadía",
-        "Prima", "Cesantías", "Interés cesantías", "Vacaciones", "Pensión empresa",
-        "Caja compensación / CCP", "ARL", "Salud empresa", "SENA", "ICBF", "TOTAL COSTO CONDUCTOR EMPRESA"
+        "Devengado conductor", "Base fija salarial", "Base prestacional / IBC corregida", "Valor no prestacional",
+        "Prima", "Cesantías", "Interés cesantías", "Vacaciones",
+        "Pensión empresa", "Caja compensación / CCP", "ARL", "Salud empresa", "SENA", "ICBF",
+        "Dotación", "Alimentación", "Estadía",
+        "SOAT", "Técnico-mecánica", "Pólizas / seguros operación", "GPS / plataforma monitoreo", "Administración / documentación",
+        "Lavado general vehículo", "Peaje con chip", "Combustible", "Parqueadero", "Mantenimiento",
+        "COSTO TOTAL EMPRESA MENSUAL"
     ],
     "% aplicado": [
-        "", "", "", "", pct(prima_pct), pct(ces_pct), pct(int_ces_pct), pct(vac_pct),
-        pct(pension_emp_pct), pct(ccp_pct), pct(arl_pct), pct(salud_emp_pct), pct(sena_pct), pct(icbf_pct), ""
+        "", "", "", "",
+        pct(prima_pct), pct(ces_pct), pct(int_ces_pct), pct(vac_pct),
+        pct(pension_emp_pct), pct(ccp_pct), pct(arl_pct), pct(salud_emp_pct), pct(sena_pct), pct(icbf_pct),
+        "", "", "",
+        "", "", "", "", "", "", "", "", "", "", ""
     ],
-    "Base": [
+    "Base / soporte": [
         "", cop(base_fija_salarial), cop(base_prestacional_ibc), cop(no_prestacional),
         cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc),
-        cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc),
-        cop(base_prestacional_ibc), cop(base_prestacional_ibc), ""
+        cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc),
+        "Lo paga empresa", "Lo paga empresa", "Lo paga empresa",
+        "Lo paga empresa", "Lo paga empresa", "Lo paga empresa", "Lo paga empresa", "Lo paga empresa",
+        "Lo paga empresa", "Lo paga empresa", "Lo paga empresa", "Lo paga empresa", "Lo paga empresa",
+        ""
     ],
     "Valor": [
         devengado, base_fija_salarial, base_prestacional_ibc, no_prestacional,
-        prima, ces, int_ces, vac, pension_emp, ccp, arl, salud_emp, sena, icbf, costo_conductor_empresa
+        prima, ces, int_ces, vac,
+        pension_emp, ccp, arl, salud_emp, sena, icbf,
+        dotacion, alimentacion, estadia,
+        soat, tecnomecanica, polizas, gps, administracion,
+        lavado, peaje, combustible, parqueadero, mantenimiento,
+        costo_total_empresa_mensual
     ]
 })
-empresa_conductor_show = empresa_conductor_df.copy()
-empresa_conductor_show["Valor"] = empresa_conductor_show["Valor"].map(cop)
-st.dataframe(empresa_conductor_show, use_container_width=True, hide_index=True)
+
+empresa_total_show = empresa_total_df.copy()
+empresa_total_show["Valor"] = empresa_total_show["Valor"].map(cop)
+st.dataframe(empresa_total_show, use_container_width=True, hide_index=True)
+
+resumen_empresa_df = pd.DataFrame({
+    "Resumen": [
+        "Subtotal nómina conductor sin gastos",
+        "Subtotal gastos conductor",
+        "Subtotal gastos vehículo",
+        "TOTAL EMPRESA MENSUAL"
+    ],
+    "Valor": [
+        costo_conductor_empresa,
+        gasto_conductor,
+        gasto_vehiculo,
+        costo_total_empresa_mensual
+    ]
+})
+resumen_empresa_show = resumen_empresa_df.copy()
+resumen_empresa_show["Valor"] = resumen_empresa_show["Valor"].map(cop)
+st.dataframe(resumen_empresa_show, use_container_width=True, hide_index=True)
 
 st.divider()
 st.subheader("6️⃣ Escenarios de comisión por productividad")
@@ -521,34 +577,7 @@ p2.metric("Comisión aplicada", cop(comision))
 p3.metric("Escenario activo", escenario_activo)
 
 st.divider()
-st.subheader("7️⃣ Gastos vehículo")
-gasto_vehiculo_df = pd.DataFrame({
-    "Concepto": [
-        "SOAT", "Técnico-mecánica", "Pólizas / seguros operación", "GPS / plataforma monitoreo",
-        "Administración / documentación", "Lavado general vehículo", "Peaje con chip", "Combustible",
-        "Parqueadero", "Mantenimiento", "TOTAL GASTO VEHÍCULO"
-    ],
-    "Valor": [
-        soat, tecnomecanica, polizas, gps, administracion, lavado, peaje, combustible,
-        parqueadero, mantenimiento, gasto_vehiculo
-    ]
-})
-gasto_vehiculo_show = gasto_vehiculo_df.copy()
-gasto_vehiculo_show["Valor"] = gasto_vehiculo_show["Valor"].map(cop)
-st.dataframe(gasto_vehiculo_show, use_container_width=True, hide_index=True)
-
-st.divider()
-st.subheader("8️⃣ Gastos conductor")
-gasto_conductor_df = pd.DataFrame({
-    "Concepto": ["Dotación", "Alimentación", "Estadía", "TOTAL GASTOS CONDUCTOR"],
-    "Valor": [dotacion, alimentacion, estadia, gasto_conductor]
-})
-gasto_conductor_show = gasto_conductor_df.copy()
-gasto_conductor_show["Valor"] = gasto_conductor_show["Valor"].map(cop)
-st.dataframe(gasto_conductor_show, use_container_width=True, hide_index=True)
-
-st.divider()
-st.subheader("9️⃣ Panel legal semanal - alerta")
+st.subheader("7️⃣ Panel legal semanal - alerta")
 legal_total = weekly_df.copy()
 totales = {}
 for col in legal_total.columns:
@@ -567,7 +596,7 @@ l2.metric("Faltante semanal acumulado", hrs(weekly_df["Faltante semanal"].sum())
 l3.metric("Referencia semanal", hrs(horas_ley_semana))
 
 st.divider()
-st.subheader("🔟 Programación visual 14x7")
+st.subheader("8️⃣ Programación visual 14x7")
 html = "<table style='width:100%; border-collapse:separate; border-spacing:6px;'>"
 for semana in sorted(df["Semana"].unique()):
     html += "<tr>"
@@ -596,7 +625,7 @@ st.markdown(html, unsafe_allow_html=True)
 st.caption("Verde: labora | Gris: descanso | Morado: nocturno | Rojo: dominical | Azul: festivo")
 
 st.divider()
-st.subheader("📄 Detalle diario descargable")
+st.subheader("9️⃣ Detalle diario descargable")
 detalle = df.copy()
 detalle["Horas totales"] = detalle["Horas totales"].round(1)
 detalle["Horas diurnas"] = detalle["Horas diurnas"].round(1)
