@@ -334,7 +334,7 @@ comision = comision_preview
 
 base_prestacional_ibc = base_fija_salarial + total_recargos + comision
 no_prestacional = bono_com
-devengado = base_fija_salarial + bono_com + total_recargos + comision
+devengado = base_fija_salarial + total_recargos + comision
 
 prima = base_prestacional_ibc * prima_pct
 ces = base_prestacional_ibc * ces_pct
@@ -356,7 +356,7 @@ total_descuentos = desc_salud + desc_pension + otros_descuentos
 neto_conductor = devengado - total_descuentos
 
 gasto_vehiculo = soat + tecnomecanica + polizas + gps + administracion + lavado + peaje + combustible + parqueadero + mantenimiento
-gasto_conductor = dotacion + alimentacion + estadia
+gasto_conductor = dotacion + alimentacion + estadia + bono_com
 costo_conductor_empresa = devengado + total_prestaciones + total_aportes
 costo_total_empresa_mensual = costo_conductor_empresa + gasto_vehiculo + gasto_conductor
 costo_mensual_flota = costo_total_empresa_mensual * cantidad_conductores
@@ -420,24 +420,23 @@ st.divider()
 st.subheader("4️⃣ ¿Cuánto se le paga al conductor?")
 conductor_df = pd.DataFrame({
     "Concepto": [
-        "SMLV / salario base", "Bono disponibilidad", "Bono resultados", "Bono comunicación no prestacional",
+        "SMLV / salario base", "Bono disponibilidad", "Bono resultados",
         "Recargo nocturno", "Extras diurnas", "Extras nocturnas", "Dominicales", "Festivos",
         "Comisión productividad", "Descuento salud empleado", "Descuento pensión empleado", "Otros descuentos",
         "NETO A PAGAR A CUENTA BANCARIA"
     ],
     "% aplicado": [
-        "", "", "", "", pct(rec_nocturno), pct(rec_extra_diurna), pct(rec_extra_nocturna),
+        "", "", "", pct(rec_nocturno), pct(rec_extra_diurna), pct(rec_extra_nocturna),
         pct(rec_dominical), pct(rec_festivo), f"{pct_comision_input:.2f}%".replace(".", ","),
         pct(salud_trab_pct), pct(pension_trab_pct), "", ""
     ],
     "Soporte": [
-        "", "", "", "No prestacional",
-        hrs(horas_nocturnas), hrs(horas_extras_diurnas), hrs(horas_extras_nocturnas),
+        "", "", "", hrs(horas_nocturnas), hrs(horas_extras_diurnas), hrs(horas_extras_nocturnas),
         f"{domingos_laborados} domingos", f"{festivos_laborados} festivos",
         escenario_activo, cop(base_prestacional_ibc), cop(base_prestacional_ibc), "", ""
     ],
     "Valor": [
-        smlv, bono_disp, bono_res, bono_com, valor_nocturno, valor_extra_diurna, valor_extra_nocturna,
+        smlv, bono_disp, bono_res, valor_nocturno, valor_extra_diurna, valor_extra_nocturna,
         valor_dominical, valor_festivo, comision, -desc_salud, -desc_pension, -otros_descuentos, neto_conductor
     ]
 })
@@ -462,44 +461,44 @@ costo_mensual_flota = costo_total_empresa_mensual * cantidad_conductores
 
 empresa_total_df = pd.DataFrame({
     "Bloque": [
-        "NÓMINA CONDUCTOR", "NÓMINA CONDUCTOR", "NÓMINA CONDUCTOR", "NÓMINA CONDUCTOR",
+        "NÓMINA CONDUCTOR", "NÓMINA CONDUCTOR",
         "PRESTACIONES", "PRESTACIONES", "PRESTACIONES", "PRESTACIONES",
         "APORTES EMPRESA", "APORTES EMPRESA", "APORTES EMPRESA", "APORTES EMPRESA", "APORTES EMPRESA", "APORTES EMPRESA",
-        "GASTOS CONDUCTOR", "GASTOS CONDUCTOR", "GASTOS CONDUCTOR",
+        "GASTOS CONDUCTOR", "GASTOS CONDUCTOR", "GASTOS CONDUCTOR", "GASTOS CONDUCTOR",
         "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO",
         "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO", "GASTOS VEHÍCULO",
         "TOTAL GENERAL"
     ],
     "Concepto": [
-        "Devengado conductor", "Base fija salarial", "Base prestacional / IBC corregida", "Valor no prestacional",
+        "Devengado conductor", "Base prestacional / IBC",
         "Prima", "Cesantías", "Interés cesantías", "Vacaciones",
         "Pensión empresa", "Caja compensación / CCP", "ARL", "Salud empresa", "SENA", "ICBF",
-        "Dotación", "Alimentación", "Estadía",
+        "Dotación", "Alimentación", "Estadía", "Bono de comunicación",
         "SOAT", "Técnico-mecánica", "Pólizas / seguros operación", "GPS / plataforma monitoreo", "Administración / documentación",
         "Lavado general vehículo", "Peaje con chip", "Combustible", "Parqueadero", "Mantenimiento",
         "COSTO TOTAL EMPRESA MENSUAL"
     ],
     "% aplicado": [
-        "", "", "", "",
+        "", "",
         pct(prima_pct), pct(ces_pct), pct(int_ces_pct), pct(vac_pct),
         pct(pension_emp_pct), pct(ccp_pct), pct(arl_pct), pct(salud_emp_pct), pct(sena_pct), pct(icbf_pct),
-        "", "", "",
+        "", "", "", "",
         "", "", "", "", "", "", "", "", "", "", ""
     ],
     "Base / soporte": [
-        "", cop(base_fija_salarial), cop(base_prestacional_ibc), cop(no_prestacional),
+        "", cop(base_prestacional_ibc),
         cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc),
         cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc), cop(base_prestacional_ibc),
-        "Lo paga empresa", "Lo paga empresa", "Lo paga empresa",
+        "Lo paga empresa", "Lo paga empresa", "Lo paga empresa", "No prestacional / auxilio comunicación",
         "Lo paga empresa", "Lo paga empresa", "Lo paga empresa", "Lo paga empresa", "Lo paga empresa",
         "Lo paga empresa", "Lo paga empresa", "Lo paga empresa", "Lo paga empresa", "Lo paga empresa",
         ""
     ],
     "Valor": [
-        devengado, base_fija_salarial, base_prestacional_ibc, no_prestacional,
+        devengado, base_prestacional_ibc,
         prima, ces, int_ces, vac,
         pension_emp, ccp, arl, salud_emp, sena, icbf,
-        dotacion, alimentacion, estadia,
+        dotacion, alimentacion, estadia, bono_com,
         soat, tecnomecanica, polizas, gps, administracion,
         lavado, peaje, combustible, parqueadero, mantenimiento,
         costo_total_empresa_mensual
