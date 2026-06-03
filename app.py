@@ -4,7 +4,6 @@ from datetime import date, datetime, time, timedelta
 
 import pandas as pd
 import streamlit as st
-import holidays
 
 st.set_page_config(
     page_title="Simulador 14x7 - Transporte Especial",
@@ -114,20 +113,14 @@ def calcular_comision_escalonada(
     return 0, "No alcanza rango de comisión", "NO APLICA"
 
 
-def construir_programacion(anio, mes, fecha_inicio_ciclo, hora_inicio, hora_fin):
-    """
-    Construye la programación mensual 14x7 usando fecha real de inicio y festivos oficiales de Colombia.
-    - Día ciclo 1 a 14: LABORA
-    - Día ciclo 15 a 21: DESCANSO
-    - Festivos reales se detectan automáticamente con holidays.Colombia.
-    """
-    festivos_colombia = holidays.Colombia(years=[anio])
+def construir_programacion(anio, mes, fecha_inicio_ciclo, hora_inicio, hora_fin, festivos_simulados):
     dias_mes = calendar.monthrange(anio, mes)[1]
     horas_dia, _, _ = rango_horas(hora_inicio, hora_fin)
     noct_dia = horas_nocturnas_turno(hora_inicio, hora_fin)
     diur_dia = max(0, horas_dia - noct_dia)
 
     filas = []
+    festivos_asignados = 0
 
     for d in range(1, dias_mes + 1):
         fecha = date(anio, mes, d)
@@ -136,8 +129,11 @@ def construir_programacion(anio, mes, fecha_inicio_ciclo, hora_inicio, hora_fin)
         dia_ciclo = (dias_desde_inicio % 21) + 1
         trabaja = dia_ciclo <= 14
         es_domingo = fecha.weekday() == 6
-        es_festivo = fecha in festivos_colombia
-        nombre_festivo = festivos_colombia.get(fecha, "")
+
+        festivo_laborado = False
+        if trabaja and not es_domingo and festivos_asignados < festivos_simulados:
+            festivo_laborado = True
+            festivos_asignados += 1
 
         horas_totales = horas_dia if trabaja else 0
         horas_noct = noct_dia if trabaja else 0
@@ -145,7 +141,7 @@ def construir_programacion(anio, mes, fecha_inicio_ciclo, hora_inicio, hora_fin)
 
         if not trabaja:
             etiqueta = "DESCANSO"
-        elif es_festivo:
+        elif festivo_laborado:
             etiqueta = "FESTIVO"
         elif es_domingo:
             etiqueta = "DOMINICAL"
@@ -163,11 +159,8 @@ def construir_programacion(anio, mes, fecha_inicio_ciclo, hora_inicio, hora_fin)
             "Estado": "LABORA" if trabaja else "DESCANSO",
             "Etiqueta": etiqueta,
             "Es domingo": es_domingo,
-            "Es festivo Colombia": es_festivo,
-            "Nombre festivo": nombre_festivo,
             "Dominical laborado": trabaja and es_domingo,
-            "Festivo laborado": trabaja and es_festivo,
-            "Festivo no laborado": (not trabaja) and es_festivo,
+            "Festivo laborado": festivo_laborado,
             "Horas totales": horas_totales,
             "Horas diurnas": horas_diur,
             "Horas nocturnas": horas_noct,
@@ -197,6 +190,8 @@ with st.sidebar:
     horas_base_dia_operacional = st.number_input("Horas base operacionales por día laborado", min_value=1.0, max_value=12.0, value=8.0, step=0.5)
     max_disponibles = st.number_input("Máximo recomendado horas disponibles", min_value=1.0, max_value=24.0, value=12.0, step=0.5)
     limite_fatiga = st.number_input("Límite máximo fatiga", min_value=1.0, max_value=24.0, value=15.0, step=0.5)
+    festivos_laborados_simulados = st.number_input("Festivos laborados simulados", min_value=0, max_value=10, value=0)
+
     st.divider()
     st.subheader("💰 Conductor")
     smlv = st.number_input("SMLV / salario base", min_value=0, value=1750905, step=10000)
@@ -284,7 +279,7 @@ with st.sidebar:
     estadia = st.number_input("Estadía", min_value=0, value=0, step=10000)
 
 
-df = construir_programacion(anio, mes, fecha_inicio_ciclo, hora_inicio, hora_fin)
+df = construir_programacion(anio, mes, fecha_inicio_ciclo, hora_inicio, hora_fin, int(festivos_laborados_simulados))
 
 horas_dia, _, _ = rango_horas(hora_inicio, hora_fin)
 total_horas = df["Horas totales"].sum()
@@ -296,7 +291,7 @@ dias_descanso = int((df["Estado"] == "DESCANSO").sum())
 domingos_laborados = int(df["Dominical laborado"].sum())
 domingos_no_laborados = int(((df["Es domingo"] == True) & (df["Estado"] == "DESCANSO")).sum())
 festivos_laborados = int(df["Festivo laborado"].sum())
-festivos_no_laborados = int(df["Festivo no laborado"].sum())
+festivos_no_laborados = max(0, int(festivos_laborados_simulados) - festivos_laborados)
 
 horas_base_operacional = dias_laborados * horas_base_dia_operacional
 horas_extras_operacionales = max(0, total_horas - horas_base_operacional)
@@ -616,19 +611,17 @@ for semana in sorted(df["Semana"].unique()):
         else:
             bg = "#D9EAD3"
 
-        festivo_txt = f"<div style='font-size:10px'>🎌 {r['Nombre festivo']}</div>" if r.get("Es festivo Colombia", False) else ""
         cell = f"""
         <div style='font-weight:700;font-size:15px'>{int(r['Día'])}</div>
         <div>{r['Día semana']}</div>
         <div style='font-size:12px'>{r['Estado']}</div>
-        {festivo_txt}
         <div style='font-size:11px'>D {round(r['Horas diurnas'])}h / N {round(r['Horas nocturnas'])}h</div>
         """
         html += f"<td style='background:{bg}; padding:9px; border-radius:10px; text-align:center; border:1px solid #E2E8F0;'>{cell}</td>"
     html += "</tr>"
 html += "</table>"
 st.markdown(html, unsafe_allow_html=True)
-st.caption("Verde: labora | Gris: descanso | Morado: nocturno | Rojo: dominical | Azul: festivo real Colombia")
+st.caption("Verde: labora | Gris: descanso | Morado: nocturno | Rojo: dominical | Azul: festivo")
 
 st.divider()
 st.subheader("9️⃣ Detalle diario descargable")
