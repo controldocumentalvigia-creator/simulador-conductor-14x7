@@ -420,7 +420,7 @@ st.divider()
 st.subheader("4️⃣ ¿Cuánto se le paga al conductor?")
 conductor_df = pd.DataFrame({
     "Concepto": [
-        "SMLV / salario base", "Bono disponibilidad", "Bono resultados", "Bono comunicación no prestacional",
+        "SMLV / salario base", "Bono disponibilidad", "Bono resultados", "Bono comunicación ",
         "Recargo nocturno", "Extras diurnas", "Extras nocturnas", "Dominicales", "Festivos",
         "Comisión productividad", "Descuento salud empleado", "Descuento pensión empleado", "Otros descuentos",
         "NETO A PAGAR A CUENTA BANCARIA"
@@ -449,7 +449,7 @@ st.divider()
 st.subheader("5️⃣ ¿Cuánto paga la empresa por el conductor?")
 empresa_conductor_df = pd.DataFrame({
     "Concepto": [
-        "Devengado conductor", "Base fija salarial", "Base prestacional / IBC corregida", "Valor no prestacional",
+        "Devengado conductor", "Base fija salarial", "Base prestacional / IBC ", "Bono comunicación", "Dotación", "alimentación", "estadía",
         "Prima", "Cesantías", "Interés cesantías", "Vacaciones", "Pensión empresa",
         "Caja compensación / CCP", "ARL", "Salud empresa", "SENA", "ICBF", "TOTAL COSTO CONDUCTOR EMPRESA"
     ],
