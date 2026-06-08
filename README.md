@@ -1,11 +1,12 @@
-Simulador conductor + vehículo 14x7
-Dashboard en Streamlit para simular costo empresa y neto conductor bajo esquema 14x7.
-Archivos
-app.py
-requirements.txt
-README.md
-Despliegue
-Subir los 3 archivos a GitHub.
-En Streamlit Community Cloud seleccionar el repositorio.
-Main file path: app.py
-Deploy o Reboot app.
+# Simulador Gerencial 14x7 - Conductor + Vehículo
+
+Versión final según prompt maestro.
+
+Incluye programación 14x7 desde fecha real, días NO INICIA OPERACIÓN, festivos reales Colombia sin librerías externas, nómina conductor, IBC, productividad, gastos conductor, gastos vehículo, panel legal, calendario visual y detalle diario descargable.
+
+## Requisitos
+streamlit==1.41.1
+pandas==2.2.3
+
+## Ejecución
+streamlit run app.py
